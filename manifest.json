@@ -22,12 +22,16 @@
     }
   ],
 
-  "browser_action": {
+  "page_action": {
+    "browser_style": true,
     "default_icon": {
       "19": "icon1.png",
       "38": "icon1.png"
     },
-    "default_popup": "archive.html"
+    "default_popup": "archive.html",
+    "show_matches": [
+      "https://archiveofourown.org/tags/*"
+    ]
   }
 
 }

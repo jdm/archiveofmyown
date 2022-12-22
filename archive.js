@@ -1,24 +1,27 @@
 let tag = null;
 let pageContent = null;
+let downloadDir = null;
 
 (async () => {
     // TODO: ensure page query param is absent, always start at first page
     pageContent = document.querySelector('#page-content');
     const [currentTab] =
           await browser.tabs.query({active: true, currentWindow: true});
-    if (!currentTab.url.startsWith('https://archiveofourown.org/tags/')) {
-        pageContent.innerHTML =
-            `To use this extension go to a tag page and then click on the extension icon again`;
-    } else {
-        const url = new URL(currentTab.url);
-        const pathParts = url.pathname.split('/');
-        tag = decodeURIComponent(pathParts[2].replace('*s*', '/'));
+    const url = new URL(currentTab.url);
+    const pathParts = url.pathname.split('/');
+    tag = decodeURIComponent(pathParts[2].replace('*s*', '/'));
 
-        const button = document.createElement('button');
-        button.textContent = `Archive ${tag}`;
-        button.onclick = doArchive;
-        pageContent.appendChild(button);
-    }
+    const button = document.querySelector("#archive");
+    button.textContent = `Archive ${tag}`;
+    button.onclick = doArchive;
+
+    const input = document.querySelector("#directory");
+    input.onchange = (event) => {
+        downloadDir = event.target.files[0].webkitRelativePath;
+        console.log(`downloading to ${downloadDir}`);
+        button.removeAttribute("disabled");
+    };
+
 })();
 
 let pages = null;
