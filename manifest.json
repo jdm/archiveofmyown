@@ -1,0 +1,33 @@
+{
+
+  "manifest_version": 2,
+  "name": "archiveofmyown",
+  "version": "1.0",
+
+  "description": "Allows archiving the contents of a tag on archiveofourown.org.",
+
+  "icons": {
+    "48": "icon1.png"
+  },
+
+  "permissions": [
+    "activeTab",
+    "downloads"
+  ],
+
+  "sscontent_scripts": [
+    {
+      "matches": ["*://*.archiveofourown.org/tags/*"],
+      "js": ["tag.js"]
+    }
+  ],
+
+  "browser_action": {
+    "default_icon": {
+      "19": "icon1.png",
+      "38": "icon1.png"
+    },
+    "default_popup": "archive.html"
+  }
+
+}
