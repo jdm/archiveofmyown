@@ -81,6 +81,7 @@ function updateContent(currentPage, works, downloadUrls, downloadIndex, pages) {
 <p>Scanned ${currentPage}/${pages != null ? pages : "??"} pages for works.
 <p>Retrieved ${downloadUrls.length}/${works.length} download links.
 <p>Started ${downloadIndex}/${downloadUrls.length} downloads.
+<div class="lds-dual-ring"></div>
 <p><button id="abort">Abort</button>
 `;
     pageContent.innerHTML = content;
