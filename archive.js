@@ -2,7 +2,14 @@ let tag = null;
 let pageContent = null;
 let downloadDir = null;
 
-(async () => {
+function reset() {
+    browser.runtime.sendMessage({ op: "reset" });
+    browser.tabs.query({active: true, currentWindow: true})
+        .then(([tab]) => browser.tabs.sendMessage(tab.id, {type: 'stop'}))
+    setup();
+}
+
+async function setup() {
     // TODO: ensure page query param is absent, always start at first page
     pageContent = document.querySelector('#page-content');
     const [currentTab] =
@@ -11,26 +18,57 @@ let downloadDir = null;
     const pathParts = url.pathname.split('/');
     tag = decodeURIComponent(pathParts[2].replace('*s*', '/'));
 
+    const data = await browser.storage.local.get({ "archiving": false });
+    if (data.archiving) {
+        loadUpdatedValues();
+        return;
+    }
+
+    pageContent.innerHTML =
+        `
+  <!--<label for="directory">Download directory:</label> <input id="directory" type="file" webkitdirectory>-->
+  <p><button id="archive">Archive</button>
+  <p><button id="reset">Reset</button>
+`
+
     const button = document.querySelector("#archive");
     button.textContent = `Archive ${tag}`;
     button.onclick = doArchive;
 
-    const input = document.querySelector("#directory");
+    const resetButton = document.querySelector("#reset");
+    resetButton.onclick = reset;
+
+    /*const input = document.querySelector("#directory");
     input.onchange = (event) => {
         downloadDir = event.target.files[0].webkitRelativePath;
         console.log(`downloading to ${downloadDir}`);
         button.removeAttribute("disabled");
-    };
+    };*/
+}
 
-})();
+(async () => setup())();
 
-let pages = null;
-let currentPage = 0;
-let works = [];
-let downloadUrls = [];
-let downloadIndex = 0;
+function loadUpdatedValues() {
+    browser.storage.local.get({
+        "currentPage": 0,
+        "works": [],
+        "downloadUrls": [],
+        "downloadIndex": 0,
+        "pages": null,
+        "archiving": false,
+    }).then(({ currentPage, works, downloadUrls, downloadIndex, pages, archiving }) => {
+        if (!archiving) {
+            return;
+        }
+        updateContent(currentPage, works, downloadUrls, downloadIndex, pages);
+    })
+}
 
-function updateContent() {
+browser.storage.onChanged.addListener((changes, area) => {
+    loadUpdatedValues();
+});
+
+function updateContent(currentPage, works, downloadUrls, downloadIndex, pages) {
     if (currentPage == pages &&
         downloadUrls.length == works.length &&
         downloadIndex == downloadUrls.length)
@@ -43,52 +81,14 @@ function updateContent() {
 <p>Scanned ${currentPage}/${pages != null ? pages : "??"} pages for works.
 <p>Retrieved ${downloadUrls.length}/${works.length} download links.
 <p>Started ${downloadIndex}/${downloadUrls.length} downloads.
+<p><button id="abort">Abort</button>
 `;
     pageContent.innerHTML = content;
+    document.querySelector("#abort").onclick = reset;
 }
 
-setInterval(() => {
-    if (downloadIndex == downloadUrls.length) {
-        return;
-    }
-    // TODO: detect failed download and retry.
-    const url = downloadUrls[downloadIndex];
-    const urlParts = (new URL(url)).pathname.split('/');
-    const filename = decodeURIComponent(urlParts[urlParts.length - 1]);
-    // TODO: allow configuring destination prefix
-    const destination = "archive/" + filename;
-    console.log(`Downloading ${url} to ${filename}`);
-    browser.downloads.download({
-        url: url,
-        filename: destination,
-        saveAs: false,
-    })
-        .then(item => console.log(`Started downloading ${url}`))
-        .catch(reason => console.error(`Download of ${url} failed: ${reason}`));
-    downloadIndex += 1;
-    updateContent();
-}, 3000);
-
 function doArchive() {
-    browser.runtime.onMessage.addListener(message => {
-        console.log(`got message ${JSON.stringify(message)}`);
-        switch (message.op) {
-        case 'pages':
-            pages = message.count;
-            break;
-        case 'page':
-            works = works.concat(message.urls);
-            currentPage = Math.max(message.pageNum, currentPage);
-            break;
-        case 'work':
-            downloadUrls.push(message.url);
-            break;
-        }
-        updateContent();
-    });
+    browser.storage.local.set({ archiving: true });
     browser.tabs.query({active: true, currentWindow: true})
-        .then(([tab]) => browser.tabs.executeScript(tab.id, {file: '/inject.js'}))
-        .then(() => console.log("should have executed inject.js"))
-        .catch(e => console.error("archive.js: " + e));
-    updateContent();
+        .then(([tab]) => browser.tabs.sendMessage(tab.id, {type: 'begin'}))
 }

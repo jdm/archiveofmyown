@@ -12,15 +12,18 @@
 
   "permissions": [
     "activeTab",
-    "downloads"
+    "downloads",
+    "storage"
   ],
 
-  "sscontent_scripts": [
-    {
-      "matches": ["*://*.archiveofourown.org/tags/*"],
-      "js": ["tag.js"]
-    }
-  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+
+  "content_scripts": [{
+    "matches": ["https://archiveofourown.org/tags/*"],
+    "js": ["inject.js"]
+  }],
 
   "page_action": {
     "browser_style": true,
