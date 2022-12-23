@@ -19,10 +19,9 @@
         return workUrls;
     }
 
-    function handleWork(document) {
+    function handleWork(document, format) {
         console.log("fetching download URL");
-        //TODO: support choosing download type
-        const downloadButton = document.querySelector(".download .expandable > li:nth-child(2) > a:nth-child(1)");
+        const downloadButton = document.querySelector(`.download .expandable > li:nth-child(${format}) > a:nth-child(1)`);
         chrome.runtime.sendMessage({
             'op': 'work',
             'url': downloadButton.href.toString(),
@@ -49,7 +48,7 @@
 
     let pageInterval = null;
     let worksInterval = null;
-    function beginArchiving() {
+    function beginArchiving(format) {
         console.log("Starting archival process.");
 
         let baseTagPage = new URL(location.href);
@@ -67,7 +66,7 @@
                 return;
             }
             // TODO: retry if failed.
-            fetchPage(works.shift(), handleWork);
+            fetchPage(works.shift(), (doc) => handleWork(doc, format));
         }, 2000)
 
         let nextPage = 2;
@@ -90,7 +89,7 @@
     chrome.runtime.onMessage.addListener(message => {
         switch (message.type) {
         case 'begin':
-            beginArchiving();
+            beginArchiving(message.format);
             break;
         case 'stop':
             if (pageInterval != null) {

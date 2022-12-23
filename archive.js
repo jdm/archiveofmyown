@@ -26,6 +26,13 @@ async function setup() {
     pageContent.innerHTML =
         `
   <label for="directory">Download subdirectory:</label> <input id="directory" size=20 value=${data.downloadDir}>
+  <p><select id="format">
+    <option value="1">AZW3</option>
+    <option value="2" selected>EPUB</option>
+    <option value="3">MOBI</option>
+    <option value="4">PDF</option>
+    <option value="5">HTML</option>
+  </select>
   <p><button id="archive">Archive</button>
   <p><button id="reset">Reset</button>
 `
@@ -87,7 +94,9 @@ function doArchive() {
     }
     console.log(`downloading to ${downloadDir}`);
 
+    const format = document.querySelector('#format').value;
+
     chrome.storage.local.set({ archiving: true, downloadDir: downloadDir });
     chrome.tabs.query({active: true, currentWindow: true})
-        .then(([tab]) => chrome.tabs.sendMessage(tab.id, {type: 'begin'}))
+        .then(([tab]) => chrome.tabs.sendMessage(tab.id, {type: 'begin', format: parseInt(format) }))
 }
