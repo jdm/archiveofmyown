@@ -3,22 +3,22 @@ let pageContent = null;
 let downloadDir = null;
 
 function reset() {
-    browser.runtime.sendMessage({ op: "reset" });
-    browser.tabs.query({active: true, currentWindow: true})
-        .then(([tab]) => browser.tabs.sendMessage(tab.id, {type: 'stop'}))
-    setup();
+    chrome.runtime.sendMessage({ op: "reset" });
+    chrome.tabs.query({active: true, currentWindow: true})
+        .then(([tab]) => chrome.tabs.sendMessage(tab.id, {type: 'stop'}))
+    setTimeout(() => setup(), 1000);
 }
 
 async function setup() {
     // TODO: ensure page query param is absent, always start at first page
     pageContent = document.querySelector('#page-content');
     const [currentTab] =
-          await browser.tabs.query({active: true, currentWindow: true});
+          await chrome.tabs.query({active: true, currentWindow: true});
     const url = new URL(currentTab.url);
     const pathParts = url.pathname.split('/');
     tag = decodeURIComponent(pathParts[2].replace('*s*', '/'));
 
-    const data = await browser.storage.local.get({ "archiving": false });
+    const data = await chrome.storage.local.get({ "archiving": false });
     if (data.archiving) {
         loadUpdatedValues();
         return;
@@ -46,10 +46,8 @@ async function setup() {
     };*/
 }
 
-(async () => setup())();
-
 function loadUpdatedValues() {
-    browser.storage.local.get({
+    chrome.storage.local.get({
         "currentPage": 0,
         "works": [],
         "downloadUrls": [],
@@ -64,9 +62,11 @@ function loadUpdatedValues() {
     })
 }
 
-browser.storage.onChanged.addListener((changes, area) => {
+chrome.storage.onChanged.addListener((changes, area) => {
     loadUpdatedValues();
 });
+
+(async () => setup())();
 
 function updateContent(currentPage, works, downloadUrls, downloadIndex, pages) {
     if (currentPage == pages &&
@@ -89,7 +89,7 @@ function updateContent(currentPage, works, downloadUrls, downloadIndex, pages) {
 }
 
 function doArchive() {
-    browser.storage.local.set({ archiving: true });
-    browser.tabs.query({active: true, currentWindow: true})
-        .then(([tab]) => browser.tabs.sendMessage(tab.id, {type: 'begin'}))
+    chrome.storage.local.set({ archiving: true });
+    chrome.tabs.query({active: true, currentWindow: true})
+        .then(([tab]) => chrome.tabs.sendMessage(tab.id, {type: 'begin'}))
 }

@@ -9,7 +9,7 @@
             const url = `https://archiveofourown.org/works/${id}`;
             workUrls.push(url);
         }
-        browser.runtime.sendMessage({
+        chrome.runtime.sendMessage({
             op: 'page',
             urls: workUrls,
             pageNum: pageNumber,
@@ -23,7 +23,7 @@
         console.log("fetching download URL");
         //TODO: support choosing download type
         const downloadButton = document.querySelector(".download .expandable > li:nth-child(2) > a:nth-child(1)");
-        browser.runtime.sendMessage({
+        chrome.runtime.sendMessage({
             'op': 'work',
             'url': downloadButton.href.toString(),
         });
@@ -57,7 +57,7 @@
         // https://archiveofourown.org/tags/International%20Wizarding%20World%20Thinks%20Dumbledore%20is%20Sus
         const pages =  document.querySelector('.pagination .next').previousElementSibling;
         const numPages = parseInt(pages.textContent);
-        browser.runtime.sendMessage({
+        chrome.runtime.sendMessage({
             op: "pages",
             count: numPages,
         });
@@ -87,7 +87,7 @@
         handleTagPage(document, 1);
     }
 
-    browser.runtime.onMessage.addListener(message => {
+    chrome.runtime.onMessage.addListener(message => {
         switch (message.type) {
         case 'begin':
             beginArchiving();

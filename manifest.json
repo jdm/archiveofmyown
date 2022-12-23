@@ -1,6 +1,6 @@
 {
 
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "archiveofmyown",
   "version": "1.0",
 
@@ -13,11 +13,17 @@
   "permissions": [
     "activeTab",
     "downloads",
-    "storage"
+    "storage",
+    "alarms",
+    "scripting"
   ],
 
-  "background": {
-    "scripts": ["background.js"]
+  "firefox_background": {
+      "scripts": ["background.js"]
+  },
+
+  "chrome_background": {
+    "service_worker": "background.js"
   },
 
   "content_scripts": [{
@@ -25,7 +31,7 @@
     "js": ["inject.js"]
   }],
 
-  "page_action": {
+  "action": {
     "browser_style": true,
     "default_icon": {
       "19": "icon1.png",

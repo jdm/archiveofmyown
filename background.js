@@ -1,7 +1,7 @@
 function updateWorks(pageNum, urls) {
-    browser.storage.local.get({ "works": [], "currentPage": 0 })
+    chrome.storage.local.get({ "works": [], "currentPage": 0 })
         .then(({ works, currentPage }) => {
-            return browser.storage.local.set({
+            return chrome.storage.local.set({
                 "works": works.concat(urls),
                 "currentPage": Math.max(currentPage, pageNum),
             })
@@ -9,16 +9,16 @@ function updateWorks(pageNum, urls) {
 }
 
 function updateDownloads(url) {
-    browser.storage.local.get({ "downloadUrls": [] })
+    chrome.storage.local.get({ "downloadUrls": [] })
         .then(({ downloadUrls }) => {
-            return browser.storage.local.set({
+            return chrome.storage.local.set({
                 "downloadUrls": downloadUrls.concat([url]),
             })
         })
 }
 
 function reset() {
-    browser.storage.local.set({
+    chrome.storage.local.set({
         "pages": null,
         "currentPage": 0,
         "downloadUrls": [],
@@ -28,14 +28,14 @@ function reset() {
     })
 }
 
-browser.runtime.onMessage.addListener(message => {
+chrome.runtime.onMessage.addListener(message => {
     console.log(`got message ${JSON.stringify(message)}`);
     switch (message.op) {
     case 'reset':
         reset();
         break;
     case 'pages':
-        browser.storage.local.set({ "pages": message.count });
+        chrome.storage.local.set({ "pages": message.count });
         break;
     case 'page':
         updateWorks(message.pageNum, message.urls)
@@ -44,6 +44,7 @@ browser.runtime.onMessage.addListener(message => {
         updateDownloads(message.url);
         break;
     }
+    return false;
 });
 
 function downloadFile(downloadIndex, downloadUrls, downloadPrefix) {
@@ -57,7 +58,7 @@ function downloadFile(downloadIndex, downloadUrls, downloadPrefix) {
     // TODO: allow configuring destination prefix
     const destination = "archive/" + filename;
     console.log(`Downloading ${url} to ${destination}`);
-    browser.downloads.download({
+    chrome.downloads.download({
         url: url,
         filename: destination,
         saveAs: false,
@@ -67,12 +68,14 @@ function downloadFile(downloadIndex, downloadUrls, downloadPrefix) {
     return true;
 }
 
-setInterval(() => {
-    browser.storage.local.get({ "downloadIndex": 0, "downloadUrls": [] })
+chrome.alarms.create({ periodInMinutes: 0.05 });
+chrome.alarms.onAlarm.addListener(() => {
+    console.log("alarm!");
+    chrome.storage.local.get({ "downloadIndex": 0, "downloadUrls": [] })
         .then(({ downloadIndex, downloadUrls }) => {
             // TODO: get prefix from popup configuration
             if (downloadFile(downloadIndex, downloadUrls, "archive/")) {
-                return browser.storage.local.set({ "downloadIndex": downloadIndex + 1 });
+                return chrome.storage.local.set({ "downloadIndex": downloadIndex + 1 });
             }
         })
-}, 3000);
+});
