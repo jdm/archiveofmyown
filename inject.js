@@ -14,8 +14,6 @@
             urls: workUrls,
             pageNum: pageNumber,
         });
-        // FIXME
-        //return [workUrls[0]];
         return workUrls;
     }
 
@@ -78,8 +76,6 @@
             nextPage += 1;
             baseTagPage.searchParams.set("page", page);
             fetchPage(baseTagPage.toString(), (doc) => handleTagPage(doc, page));
-            // FIXME
-            //clearInterval(pageInterval);
         }, 3000)
 
         handleTagPage(document, 1);
