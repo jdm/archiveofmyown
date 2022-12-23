@@ -5,6 +5,6 @@ set -o nounset
 set -o pipefail
 
 . ${1}.sh
-zip -r archiveofmyown.zip *.html *.js *.png *.json
+zip -r archiveofmyown-${1}.zip *.html *.js *.png *.json
 git checkout manifest.json
 rm manifest.json.bak
