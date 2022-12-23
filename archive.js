@@ -72,7 +72,11 @@ function updateContent(currentPage, works, downloadUrls, downloadIndex, pages) {
         downloadUrls.length == works.length &&
         downloadIndex == downloadUrls.length)
     {
-        pageContent.innerHTML = `Archiving complete.`;
+        pageContent.innerHTML = `
+<p>Archiving complete.
+<p><button id="Reset">Reset</button>
+`;
+        document.querySelector("#reset").onclick = reset;
         return;
     }
     const content = `

@@ -2,7 +2,7 @@
     let works = [];
 
     function retrieveWorksFromPage(document, pageNumber) {
-        const works = document.querySelectorAll("ol.work li.work");
+        const works = document.querySelectorAll(".work li.work");
         let workUrls = [];
         for (const work of works) {
             const id = work.id.split("_")[1];
@@ -52,10 +52,9 @@
         console.log("Starting archival process.");
 
         let baseTagPage = new URL(location.href);
-        // TODO: support noncanonical tags, tags with less than one page of content
-        // https://archiveofourown.org/tags/International%20Wizarding%20World%20Thinks%20Dumbledore%20is%20Sus
-        const pages =  document.querySelector('.pagination .next').previousElementSibling;
-        const numPages = parseInt(pages.textContent);
+        const nextPageElem = document.querySelector('.pagination .next');
+        const pages = nextPageElem ? nextPageElem.previousElementSibling : null;
+        const numPages = pages ? parseInt(pages.textContent) : 1;
         chrome.runtime.sendMessage({
             op: "pages",
             count: numPages,
