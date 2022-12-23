@@ -1,6 +1,5 @@
 let tag = null;
 let pageContent = null;
-let downloadDir = null;
 
 function reset() {
     chrome.runtime.sendMessage({ op: "reset" });
@@ -18,7 +17,7 @@ async function setup() {
     const pathParts = url.pathname.split('/');
     tag = decodeURIComponent(pathParts[2].replace('*s*', '/'));
 
-    const data = await chrome.storage.local.get({ "archiving": false });
+    const data = await chrome.storage.local.get({ "archiving": false, "downloadDir": "archive" });
     if (data.archiving) {
         loadUpdatedValues();
         return;
@@ -26,7 +25,7 @@ async function setup() {
 
     pageContent.innerHTML =
         `
-  <!--<label for="directory">Download directory:</label> <input id="directory" type="file" webkitdirectory>-->
+  <label for="directory">Download subdirectory:</label> <input id="directory" size=20 value=${data.downloadDir}>
   <p><button id="archive">Archive</button>
   <p><button id="reset">Reset</button>
 `
@@ -37,13 +36,6 @@ async function setup() {
 
     const resetButton = document.querySelector("#reset");
     resetButton.onclick = reset;
-
-    /*const input = document.querySelector("#directory");
-    input.onchange = (event) => {
-        downloadDir = event.target.files[0].webkitRelativePath;
-        console.log(`downloading to ${downloadDir}`);
-        button.removeAttribute("disabled");
-    };*/
 }
 
 function loadUpdatedValues() {
@@ -89,7 +81,13 @@ function updateContent(currentPage, works, downloadUrls, downloadIndex, pages) {
 }
 
 function doArchive() {
-    chrome.storage.local.set({ archiving: true });
+    let downloadDir = document.querySelector('#directory').value;
+    if (downloadDir != "" && !downloadDir.endsWith('/')) {
+        downloadDir += '/';
+    }
+    console.log(`downloading to ${downloadDir}`);
+
+    chrome.storage.local.set({ archiving: true, downloadDir: downloadDir });
     chrome.tabs.query({active: true, currentWindow: true})
         .then(([tab]) => chrome.tabs.sendMessage(tab.id, {type: 'begin'}))
 }

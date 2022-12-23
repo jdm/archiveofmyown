@@ -55,8 +55,7 @@ function downloadFile(downloadIndex, downloadUrls, downloadPrefix) {
     const url = downloadUrls[downloadIndex];
     const urlParts = (new URL(url)).pathname.split('/');
     const filename = decodeURIComponent(urlParts[urlParts.length - 1]);
-    // TODO: allow configuring destination prefix
-    const destination = "archive/" + filename;
+    const destination = downloadPrefix + filename;
     console.log(`Downloading ${url} to ${destination}`);
     chrome.downloads.download({
         url: url,
@@ -71,10 +70,9 @@ function downloadFile(downloadIndex, downloadUrls, downloadPrefix) {
 chrome.alarms.create({ periodInMinutes: 0.05 });
 chrome.alarms.onAlarm.addListener(() => {
     console.log("alarm!");
-    chrome.storage.local.get({ "downloadIndex": 0, "downloadUrls": [] })
-        .then(({ downloadIndex, downloadUrls }) => {
-            // TODO: get prefix from popup configuration
-            if (downloadFile(downloadIndex, downloadUrls, "archive/")) {
+    chrome.storage.local.get({ "downloadIndex": 0, "downloadUrls": [], "downloadDir": "" })
+        .then(({ downloadIndex, downloadUrls, downloadDir }) => {
+            if (downloadFile(downloadIndex, downloadUrls, downloadDir)) {
                 return chrome.storage.local.set({ "downloadIndex": downloadIndex + 1 });
             }
         })
