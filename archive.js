@@ -52,13 +52,27 @@ function loadUpdatedValues() {
         "downloadIndex": 0,
         "pages": null,
         "archiving": false,
-    }).then(({ currentPage, works, downloadUrls, downloadIndex, pages, archiving }) => {
+        "throttledUntil": null,
+    }).then(({ currentPage, works, downloadUrls, downloadIndex, pages, archiving, throttledUntil }) => {
         if (!archiving) {
             return;
         }
-        updateContent(currentPage, works, downloadUrls, downloadIndex, pages);
+        updateContent(currentPage, works, downloadUrls, downloadIndex, pages, throttledUntil);
     })
 }
+
+chrome.runtime.onMessage.addListener(message => {
+    switch (message.op) {
+    case 'throttled':
+        const date = new Date();
+        const futureMilliseconds = date.getMilliseconds() + message.throttledFor;
+        chrome.storage.local.set({ "throttledUntil": futureMilliseconds });
+        break;
+    default:
+        break;
+    }
+    return false;
+});
 
 chrome.storage.onChanged.addListener((changes, area) => {
     loadUpdatedValues();
@@ -66,7 +80,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 
 (async () => setup())();
 
-function updateContent(currentPage, works, downloadUrls, downloadIndex, pages) {
+function updateContent(currentPage, works, downloadUrls, downloadIndex, pages, throttledUntil) {
     if (currentPage == pages &&
         downloadUrls.length == works.length &&
         downloadIndex == downloadUrls.length)
@@ -78,11 +92,28 @@ function updateContent(currentPage, works, downloadUrls, downloadIndex, pages) {
         document.querySelector("#reset").onclick = reset;
         return;
     }
-    const content = `
+    let content = `
 <h5>Archiving <u>${tag}</u>...</h5>
 <p>Scanned ${currentPage}/${pages != null ? pages : "??"} pages for works.
 <p>Retrieved ${downloadUrls.length}/${works.length} download links.
 <p>Started ${downloadIndex}/${downloadUrls.length} downloads.
+`
+    if (throttledUntil) {
+        const now = new Date();
+        const date = new Date();
+        date.setMilliseconds(throttledUntil);
+        if (now < date) {
+            const dateString = date.toLocaleString('en-US', {
+                hour: "numeric",
+                minute: "numeric",
+                second: "numeric",
+            });
+            content += `<p>Rate-limited by AO3 until ${dateString}.`
+        }
+    }
+
+    content +=
+`
 <div class="lds-dual-ring"></div>
 <p><button id="abort">Abort</button>
 `;

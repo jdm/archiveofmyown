@@ -26,6 +26,7 @@ function reset() {
         "works": [],
         "archiving": false,
         "downloads": [],
+        "throttledUntil": null,
     })
 }
 
@@ -43,6 +44,8 @@ chrome.runtime.onMessage.addListener(message => {
         break;
     case 'work':
         updateDownloads(message.url);
+        break;
+    default:
         break;
     }
     return false;
@@ -92,7 +95,7 @@ chrome.downloads.onChanged.addListener(delta => {
         })
 });
 
-chrome.alarms.create({ periodInMinutes: 0.05 });
+chrome.alarms.create({ periodInMinutes: 0.025 });
 chrome.alarms.onAlarm.addListener(() => {
     chrome.storage.local.get({ "downloadIndex": 0, "downloadUrls": [], "downloadDir": "" })
         .then(({ downloadIndex, downloadUrls, downloadDir }) => {

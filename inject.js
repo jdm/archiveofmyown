@@ -78,6 +78,10 @@
                     if (retryAfter) {
                         const retryAfterMs = retryAfter * 1000 + 100;
                         console.log(`Delaying retry for ${retryAfterMs}ms`);
+                        chrome.runtime.sendMessage({
+                            op: 'throttled',
+                            throttledFor: retryAfterMs,
+                        });
                         workFetchTimeout = retryAfterMs;
                     } else {
                         workFetchTimeout *= 2;
@@ -117,6 +121,10 @@
                     if (retryAfter) {
                         const retryAfterMs = retryAfter * 1000 + 100;
                         console.log(`Delaying retry for ${retryAfterMs}ms`);
+                        chrome.runtime.sendMessage({
+                            op: 'throttled',
+                            throttledFor: retryAfterMs,
+                        });
                         tagFetchTimeout = retryAfterMs;
                     } else {
                         tagFetchTimeout *= 2;
