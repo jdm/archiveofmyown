@@ -28,6 +28,11 @@ async function setup() {
         return;
     }
 
+    await browser.scripting.executeScript({
+        target: { tabId: currentTab.id, allFrames: true },
+        files: ["inject.js"],
+    });
+
     showSingleDiv("inputs");
 
     const url = new URL(currentTab.url);

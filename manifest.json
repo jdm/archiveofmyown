@@ -32,11 +32,6 @@
     "service_worker": "background.js"
   },
 
-  "content_scripts": [{
-    "matches": ["https://archiveofourown.org/tags/*"],
-    "js": ["inject.js"]
-  }],
-
   "action": {
     "browser_style": true,
     "default_icon": {

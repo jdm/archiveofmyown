@@ -1,6 +1,11 @@
 (function() {
+    console.log("injected");
     if (typeof(browser) === "undefined") {
         browser = chrome;
+    }
+
+    if (!location.href.startsWith("https://archiveofourown.org/tags/")) {
+        return;
     }
 
     let works = [];
