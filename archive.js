@@ -1,21 +1,31 @@
 let tag = null;
-let pageContent = null;
 
 function reset() {
+    console.log("resetting");
     chrome.runtime.sendMessage({ op: "reset" });
     chrome.tabs.query({active: true, currentWindow: true})
         .then(([tab]) => chrome.tabs.sendMessage(tab.id, {type: 'stop'}))
     setTimeout(() => setup(), 1000);
 }
 
+function showSingleDiv(id) {
+    const sections = document.querySelectorAll(".section");
+    for (const section of sections) {
+        section.classList.remove("visible");
+    }
+    document.querySelector(`#${id}`).classList.add("visible");
+}
+
 async function setup() {
-    pageContent = document.querySelector('#page-content');
     const [currentTab] =
           await chrome.tabs.query({active: true, currentWindow: true});
     if (!currentTab.url.startsWith("https://archiveofourown.org/tags/")) {
-        pageContent.innerHTML = `To use this extension, visit a tag index on Archive of Our Own.`
+        showSingleDiv("nontag");
         return;
     }
+
+    showSingleDiv("inputs");
+
     const url = new URL(currentTab.url);
     const pathParts = url.pathname.split('/');
     tag = decodeURIComponent(pathParts[2].replace('*s*', '/'));
@@ -26,19 +36,8 @@ async function setup() {
         return;
     }
 
-    pageContent.innerHTML =
-        `
-  <label for="directory">Download subdirectory:</label> <input id="directory" size=20 value=${data.downloadDir}>
-  <p><select id="format">
-    <option value="1">AZW3</option>
-    <option value="2" selected>EPUB</option>
-    <option value="3">MOBI</option>
-    <option value="4">PDF</option>
-    <option value="5">HTML</option>
-  </select>
-  <p><button id="archive">Archive</button>
-  <p><button id="reset">Reset</button>
-`
+    const directoryInput = document.querySelector("#directory");
+    directoryInput.value = data.downloadDir;
 
     const button = document.querySelector("#archive");
     button.textContent = `Archive ${tag}`;
@@ -59,6 +58,7 @@ function loadUpdatedValues() {
         "throttledUntil": null,
     }).then(({ currentPage, works, downloadUrls, downloadIndex, pages, archiving, throttledUntil }) => {
         if (!archiving) {
+            showSingleDiv("inputs");
             return;
         }
         updateContent(currentPage, works, downloadUrls, downloadIndex, pages, throttledUntil);
@@ -89,19 +89,20 @@ function updateContent(currentPage, works, downloadUrls, downloadIndex, pages, t
         downloadUrls.length == works.length &&
         downloadIndex == downloadUrls.length)
     {
-        pageContent.innerHTML = `
-<p>Archiving complete.
-<p><button id="Reset">Reset</button>
-`;
-        document.querySelector("#reset").onclick = reset;
+        document.querySelector("#complete-reset").onclick = reset;
+        showSingleDiv("complete");
         return;
     }
-    let content = `
-<h5>Archiving <u>${tag}</u>...</h5>
-<p>Scanned ${currentPage}/${pages != null ? pages : "??"} pages for works.
-<p>Retrieved ${downloadUrls.length}/${works.length} download links.
-<p>Started ${downloadIndex}/${downloadUrls.length} downloads.
-`
+
+    showSingleDiv("archiving");
+    document.querySelector("#tag").textContent = tag;
+    document.querySelector("#currentPage").textContent = currentPage;
+    document.querySelector("#pages").textContent = pages != null ? pages : "??";
+    document.querySelector("#downloadLinks").textContent = downloadUrls.length;
+    document.querySelector("#works").textContent = works.length;
+    document.querySelector("#downloadIndex").textContent = downloadIndex;
+    document.querySelector("#totalDownloads").textContent = downloadUrls.length;
+
     if (throttledUntil) {
         const now = new Date();
         const date = new Date();
@@ -112,16 +113,13 @@ function updateContent(currentPage, works, downloadUrls, downloadIndex, pages, t
                 minute: "numeric",
                 second: "numeric",
             });
-            content += `<p>Rate-limited by AO3 until ${dateString}.`
+            document.querySelector("#throttledUntil").textContent = dateString;
+            document.querySelector("#throttled").classList.remove("hidden");
         }
+    } else {
+        document.querySelector("#throttled").classList.add("hidden");
     }
 
-    content +=
-`
-<div class="lds-dual-ring"></div>
-<p><button id="abort">Abort</button>
-`;
-    pageContent.innerHTML = content;
     document.querySelector("#abort").onclick = reset;
 }
 

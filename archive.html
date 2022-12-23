@@ -1,9 +1,12 @@
 <style>
-  body {
+  div {
       margin-top: 0.5em;
-      margin-bottom: 0.5em;
       margin-left: 1em;
       margin-right: 1em;
+  }
+
+  #nontag {
+      margin-bottom: 0.5em;
   }
 
   .lds-dual-ring {
@@ -30,7 +33,49 @@
           transform: rotate(360deg);
       }
   }
+
+  .section {
+      display: none;
+  }
+
+  .visible {
+      display: block;
+  }
+
+  .hidden {
+      display: none !important;
+  }
 </style>
 
-<div id="page-content"></div>
+<div id="complete" class="section">
+  <p>Achiving complete.
+  <p><button id="complete-reset">Reset</button>
+</div>
+
+<div id="archiving" class="section">
+  <h5>Archiving <u id="tag"></u>...</h5>
+  <p>Scanned <span id="currentPage">0</span>/<span id="pages">??</span> pages for works.
+  <p>Retrieved <span id="downloadLinks">0</span>/<span id="works">0</span> download links.
+  <p>Started <span id="downloadIndex">0</span>/<span id="totalDownloads">0</span> downloads.
+  <p id="throttled">Rate-limited by AO3 until <span id="throttledUntil">??</span>.</p>
+  <div class="lds-dual-ring"></div>
+  <p><button id="abort">Abort</button>
+</div>
+
+<div id="inputs" class="section">
+  <label for="directory">Download subdirectory:</label> <input id="directory" size=20>
+  <p><label for="format">Format:</label> <select id="format">
+    <option value="1">AZW3</option>
+    <option value="2" selected>EPUB</option>
+    <option value="3">MOBI</option>
+    <option value="4">PDF</option>
+    <option value="5">HTML</option>
+  </select>
+  <p><button id="archive">Archive</button>
+  <p><button id="reset">Reset</button>
+</div>
+
+<div id="nontag" class="section">
+  <p>To use this extension, visit a tax index on Archive of Our Own.
+</div>
 <script src="archive.js"></script>
