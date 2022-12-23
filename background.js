@@ -1,7 +1,11 @@
+if (typeof(browser) === "undefined") {
+    browser = chrome;
+}
+
 function updateWorks(pageNum, urls) {
-    chrome.storage.local.get({ "works": [], "currentPage": 0 })
+    browser.storage.local.get({ "works": [], "currentPage": 0 })
         .then(({ works, currentPage }) => {
-            return chrome.storage.local.set({
+            return browser.storage.local.set({
                 "works": works.concat(urls),
                 "currentPage": Math.max(currentPage, pageNum),
             })
@@ -9,16 +13,16 @@ function updateWorks(pageNum, urls) {
 }
 
 function updateDownloads(url) {
-    chrome.storage.local.get({ "downloadUrls": [] })
+    browser.storage.local.get({ "downloadUrls": [] })
         .then(({ downloadUrls }) => {
-            return chrome.storage.local.set({
+            return browser.storage.local.set({
                 "downloadUrls": downloadUrls.concat([url]),
             })
         })
 }
 
 function reset() {
-    chrome.storage.local.set({
+    browser.storage.local.set({
         "pages": null,
         "currentPage": 0,
         "downloadUrls": [],
@@ -30,14 +34,14 @@ function reset() {
     })
 }
 
-chrome.runtime.onMessage.addListener(message => {
+browser.runtime.onMessage.addListener(message => {
     console.log(`got message ${JSON.stringify(message)}`);
     switch (message.op) {
     case 'reset':
         reset();
         break;
     case 'pages':
-        chrome.storage.local.set({ "pages": message.count });
+        browser.storage.local.set({ "pages": message.count });
         break;
     case 'page':
         updateWorks(message.pageNum, message.urls)
@@ -60,47 +64,47 @@ function downloadFile(downloadIndex, downloadUrls, downloadPrefix) {
     const filename = decodeURIComponent(urlParts[urlParts.length - 1]);
     const destination = downloadPrefix + filename;
     console.log(`Downloading ${url} to ${destination}`);
-    chrome.downloads.download({
+    browser.downloads.download({
         url: url,
         filename: destination,
         saveAs: false,
     })
         .then(item => {
             console.log(`Started downloading ${url}`);
-            return chrome.storage.local.get({ downloads: {} })
+            return browser.storage.local.get({ downloads: {} })
                 .then(downloads => {
                     downloads[item.id] = url;
-                    return chrome.storage.local.set({ downloads: downloads });
+                    return browser.storage.local.set({ downloads: downloads });
                 })
         })
         .catch(reason => console.error(`Download of ${url} failed: ${reason}`));
     return true;
 }
 
-chrome.downloads.onChanged.addListener(delta => {
-    chrome.storage.local.get({ downloads: {} })
+browser.downloads.onChanged.addListener(delta => {
+    browser.storage.local.get({ downloads: {} })
         .then(downloads => {
             if (!(delta.id in downloads)) {
                 return;
             }
             if (delta.state === "interrupted") {
-                return chrome.storage.local.get({ downloadUrls: [] })
+                return browser.storage.local.get({ downloadUrls: [] })
                     .then(downloadUrls => {
                         const failedUrl = downloads[delta.id];
                         console.log(`${failedUrl} failed; adding to retry queue.`);
                         downloadUrls.push(failedUrl);
-                        return chrome.storage.local.set({ downloadUrls: downloadUrls });
+                        return browser.storage.local.set({ downloadUrls: downloadUrls });
                     })
             }
         })
 });
 
-chrome.alarms.create({ periodInMinutes: 0.025 });
-chrome.alarms.onAlarm.addListener(() => {
-    chrome.storage.local.get({ "downloadIndex": 0, "downloadUrls": [], "downloadDir": "" })
+browser.alarms.create({ periodInMinutes: 0.025 });
+browser.alarms.onAlarm.addListener(() => {
+    browser.storage.local.get({ "downloadIndex": 0, "downloadUrls": [], "downloadDir": "" })
         .then(({ downloadIndex, downloadUrls, downloadDir }) => {
             if (downloadFile(downloadIndex, downloadUrls, downloadDir)) {
-                return chrome.storage.local.set({ "downloadIndex": downloadIndex + 1 });
+                return browser.storage.local.set({ "downloadIndex": downloadIndex + 1 });
             }
         })
 });

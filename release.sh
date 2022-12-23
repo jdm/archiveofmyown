@@ -1,6 +1,10 @@
 #!/bin/bash
 
-sed -i .bak -e "s/$1_//" manifest.json
+set -o errexit
+set -o nounset
+set -o pipefail
+
+. ${1}.sh
 zip -r archiveofmyown.zip *.html *.js *.png *.json
 git checkout manifest.json
 rm manifest.json.bak

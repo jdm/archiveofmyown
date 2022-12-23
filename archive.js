@@ -1,10 +1,14 @@
+if (typeof(browser) === "undefined") {
+    browser = chrome;
+}
+
 let tag = null;
 
 function reset() {
     console.log("resetting");
-    chrome.runtime.sendMessage({ op: "reset" });
-    chrome.tabs.query({active: true, currentWindow: true})
-        .then(([tab]) => chrome.tabs.sendMessage(tab.id, {type: 'stop'}))
+    browser.runtime.sendMessage({ op: "reset" });
+    browser.tabs.query({active: true, currentWindow: true})
+        .then(([tab]) => browser.tabs.sendMessage(tab.id, {type: 'stop'}))
     setTimeout(() => setup(), 1000);
 }
 
@@ -18,7 +22,7 @@ function showSingleDiv(id) {
 
 async function setup() {
     const [currentTab] =
-          await chrome.tabs.query({active: true, currentWindow: true});
+          await browser.tabs.query({active: true, currentWindow: true});
     if (!currentTab.url.startsWith("https://archiveofourown.org/tags/")) {
         showSingleDiv("nontag");
         return;
@@ -30,7 +34,7 @@ async function setup() {
     const pathParts = url.pathname.split('/');
     tag = decodeURIComponent(pathParts[2].replace('*s*', '/'));
 
-    const data = await chrome.storage.local.get({ "archiving": false, "downloadDir": "archive" });
+    const data = await browser.storage.local.get({ "archiving": false, "downloadDir": "archive" });
     if (data.archiving) {
         loadUpdatedValues();
         return;
@@ -48,7 +52,7 @@ async function setup() {
 }
 
 function loadUpdatedValues() {
-    chrome.storage.local.get({
+    browser.storage.local.get({
         "currentPage": 0,
         "works": [],
         "downloadUrls": [],
@@ -65,12 +69,12 @@ function loadUpdatedValues() {
     })
 }
 
-chrome.runtime.onMessage.addListener(message => {
+browser.runtime.onMessage.addListener(message => {
     switch (message.op) {
     case 'throttled':
         const date = new Date();
         const futureMilliseconds = date.getMilliseconds() + message.throttledFor;
-        chrome.storage.local.set({ "throttledUntil": futureMilliseconds });
+        browser.storage.local.set({ "throttledUntil": futureMilliseconds });
         break;
     default:
         break;
@@ -78,7 +82,7 @@ chrome.runtime.onMessage.addListener(message => {
     return false;
 });
 
-chrome.storage.onChanged.addListener((changes, area) => {
+browser.storage.onChanged.addListener((changes, area) => {
     loadUpdatedValues();
 });
 
@@ -132,7 +136,7 @@ function doArchive() {
 
     const format = document.querySelector('#format').value;
 
-    chrome.storage.local.set({ archiving: true, downloadDir: downloadDir });
-    chrome.tabs.query({active: true, currentWindow: true})
-        .then(([tab]) => chrome.tabs.sendMessage(tab.id, {type: 'begin', format: parseInt(format) }))
+    browser.storage.local.set({ archiving: true, downloadDir: downloadDir });
+    browser.tabs.query({active: true, currentWindow: true})
+        .then(([tab]) => browser.tabs.sendMessage(tab.id, {type: 'begin', format: parseInt(format) }))
 }

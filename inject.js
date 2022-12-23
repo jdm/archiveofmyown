@@ -1,4 +1,8 @@
 (function() {
+    if (typeof(browser) === "undefined") {
+        browser = chrome;
+    }
+
     let works = [];
 
     function retrieveWorksFromPage(document, pageNumber) {
@@ -9,7 +13,7 @@
             const url = `https://archiveofourown.org/works/${id}`;
             workUrls.push(url);
         }
-        chrome.runtime.sendMessage({
+        browser.runtime.sendMessage({
             op: 'page',
             urls: workUrls,
             pageNum: pageNumber,
@@ -20,7 +24,7 @@
     function handleWork(document, format) {
         console.log("fetching download URL");
         const downloadButton = document.querySelector(`.download .expandable > li:nth-child(${format}) > a:nth-child(1)`);
-        chrome.runtime.sendMessage({
+        browser.runtime.sendMessage({
             'op': 'work',
             'url': downloadButton.href.toString(),
         });
@@ -56,7 +60,7 @@
         const nextPageElem = document.querySelector('.pagination .next');
         const pages = nextPageElem ? nextPageElem.previousElementSibling : null;
         const numPages = pages ? parseInt(pages.textContent) : 1;
-        chrome.runtime.sendMessage({
+        browser.runtime.sendMessage({
             op: "pages",
             count: numPages,
         });
@@ -78,7 +82,7 @@
                     if (retryAfter) {
                         const retryAfterMs = retryAfter * 1000 + 100;
                         console.log(`Delaying retry for ${retryAfterMs}ms`);
-                        chrome.runtime.sendMessage({
+                        browser.runtime.sendMessage({
                             op: 'throttled',
                             throttledFor: retryAfterMs,
                         });
@@ -121,7 +125,7 @@
                     if (retryAfter) {
                         const retryAfterMs = retryAfter * 1000 + 100;
                         console.log(`Delaying retry for ${retryAfterMs}ms`);
-                        chrome.runtime.sendMessage({
+                        browser.runtime.sendMessage({
                             op: 'throttled',
                             throttledFor: retryAfterMs,
                         });
@@ -134,7 +138,7 @@
         }, defaultFetchTimeout);
     }
 
-    chrome.runtime.onMessage.addListener(message => {
+    browser.runtime.onMessage.addListener(message => {
         switch (message.type) {
         case 'begin':
             beginArchiving(message.format);
@@ -144,5 +148,6 @@
             numPages = 0;
             break;
         }
+        return false;
     });
 }());
