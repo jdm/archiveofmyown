@@ -9,7 +9,6 @@ function reset() {
 }
 
 async function setup() {
-    // TODO: ensure page query param is absent, always start at first page
     pageContent = document.querySelector('#page-content');
     const [currentTab] =
           await chrome.tabs.query({active: true, currentWindow: true});

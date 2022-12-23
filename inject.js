@@ -64,9 +64,20 @@
             }
             // TODO: retry if failed.
             fetchPage(works.shift(), (doc) => handleWork(doc, format));
-        }, 2000)
+        }, 2000);
 
-        let nextPage = 2;
+        // If we're looking at any tag page which is not the first one, we need to fetch
+        // the first one.
+        const startPage = baseTagPage.searchParams.get("page");
+        let nextPage;
+        if (startPage != null && startPage != "1") {
+            nextPage = 1;
+        } else {
+            // We can use the current page contents without waiting for it to be fetched.
+            handleTagPage(document, 1);
+            nextPage = 2;
+        }
+
         pageInterval = setInterval(() => {
             if (nextPage > numPages) {
                 return;
@@ -76,9 +87,8 @@
             nextPage += 1;
             baseTagPage.searchParams.set("page", page);
             fetchPage(baseTagPage.toString(), (doc) => handleTagPage(doc, page));
-        }, 3000)
+        }, 3000);
 
-        handleTagPage(document, 1);
     }
 
     chrome.runtime.onMessage.addListener(message => {
