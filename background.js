@@ -25,6 +25,7 @@ function reset() {
         "downloadIndex": 0,
         "works": [],
         "archiving": false,
+        "downloads": [],
     })
 }
 
@@ -51,7 +52,6 @@ function downloadFile(downloadIndex, downloadUrls, downloadPrefix) {
     if (downloadIndex >= downloadUrls.length) {
         return false;
     }
-    // TODO: detect failed download and retry.
     const url = downloadUrls[downloadIndex];
     const urlParts = (new URL(url)).pathname.split('/');
     const filename = decodeURIComponent(urlParts[urlParts.length - 1]);
@@ -62,14 +62,38 @@ function downloadFile(downloadIndex, downloadUrls, downloadPrefix) {
         filename: destination,
         saveAs: false,
     })
-        .then(item => console.log(`Started downloading ${url}`))
+        .then(item => {
+            console.log(`Started downloading ${url}`);
+            return chrome.storage.local.get({ downloads: {} })
+                .then(downloads => {
+                    downloads[item.id] = url;
+                    return chrome.storage.local.set({ downloads: downloads });
+                })
+        })
         .catch(reason => console.error(`Download of ${url} failed: ${reason}`));
     return true;
 }
 
+chrome.downloads.onChanged.addListener(delta => {
+    chrome.storage.local.get({ downloads: {} })
+        .then(downloads => {
+            if (!(delta.id in downloads)) {
+                return;
+            }
+            if (delta.state === "interrupted") {
+                return chrome.storage.local.get({ downloadUrls: [] })
+                    .then(downloadUrls => {
+                        const failedUrl = downloads[delta.id];
+                        console.log(`${failedUrl} failed; adding to retry queue.`);
+                        downloadUrls.push(failedUrl);
+                        return chrome.storage.local.set({ downloadUrls: downloadUrls });
+                    })
+            }
+        })
+});
+
 chrome.alarms.create({ periodInMinutes: 0.05 });
 chrome.alarms.onAlarm.addListener(() => {
-    console.log("alarm!");
     chrome.storage.local.get({ "downloadIndex": 0, "downloadUrls": [], "downloadDir": "" })
         .then(({ downloadIndex, downloadUrls, downloadDir }) => {
             if (downloadFile(downloadIndex, downloadUrls, downloadDir)) {

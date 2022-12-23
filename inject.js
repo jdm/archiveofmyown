@@ -28,11 +28,16 @@
 
     function fetchPage(url, handler) {
         console.log(`fetching ${url}`);
-        fetch(url)
-            .then(response => response.text())
+        return fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    const retryAfter = response.headers.get('retry-after');
+                    throw retryAfter;
+                }
+                return response.text()
+            })
             .then(text => {
                 console.log(`parsing ${url}`);
-                // TODO: detect "retry later" message
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(text, "text/html");
                 handler(doc);
@@ -44,8 +49,6 @@
         works = works.concat(retrieveWorksFromPage(document, pageNum));
     }
 
-    let pageInterval = null;
-    let worksInterval = null;
     function beginArchiving(format) {
         console.log("Starting archival process.");
 
@@ -58,13 +61,30 @@
             count: numPages,
         });
 
-        worksInterval = setInterval(() => {
-            if (works.length === 0) {
+        const defaultFetchTimeout = 200;
+        let workFetchTimeout = defaultFetchTimeout;
+        setTimeout(function fetchNextWork() {
+            const work = works.shift();
+            if (!work) {
+                setTimeout(fetchNextWork, workFetchTimeout);
                 return;
             }
-            // TODO: retry if failed.
-            fetchPage(works.shift(), (doc) => handleWork(doc, format));
-        }, 2000);
+            fetchPage(work, (doc) => handleWork(doc, format))
+                .then(() => workFetchTimeout = defaultFetchTimeout)
+                .catch(error => {
+                    console.log(`${error}: ${work} failed, re-adding to the queue.`);
+                    works.push(work);
+                    const retryAfter = parseInt(error);
+                    if (retryAfter) {
+                        const retryAfterMs = retryAfter * 1000 + 100;
+                        console.log(`Delaying retry for ${retryAfterMs}ms`);
+                        workFetchTimeout = retryAfterMs;
+                    } else {
+                        workFetchTimeout *= 2;
+                    }
+                })
+                .finally(() => setTimeout(fetchNextWork, workFetchTimeout));
+        }, defaultFetchTimeout);
 
         // If we're looking at any tag page which is not the first one, we need to fetch
         // the first one.
@@ -78,17 +98,32 @@
             nextPage = 2;
         }
 
-        pageInterval = setInterval(() => {
+        let tagFetchTimeout = defaultFetchTimeout;
+        setTimeout(function fetchNextTagPage() {
             if (nextPage > numPages) {
+                setTimeout(fetchNextTagPage, tagFetchTimeout);
                 return;
             }
-            // TODO: retry if failed.
-            const page = nextPage;
+            fetchingPage = nextPage;
             nextPage += 1;
-            baseTagPage.searchParams.set("page", page);
-            fetchPage(baseTagPage.toString(), (doc) => handleTagPage(doc, page));
-        }, 3000);
-
+            baseTagPage.searchParams.set("page", fetchingPage);
+            fetchPage(baseTagPage.toString(), (doc) => handleTagPage(doc, fetchingPage))
+                .then(() => tagFetchTimeout = defaultFetchTimeout)
+                .catch(error => {
+                    // If we fail to fetch a page of works, we'll just keep retrying
+                    // until it succeeeds.
+                    nextPage -= 1;
+                    const retryAfter = parseInt(error);
+                    if (retryAfter) {
+                        const retryAfterMs = retryAfter * 1000 + 100;
+                        console.log(`Delaying retry for ${retryAfterMs}ms`);
+                        tagFetchTimeout = retryAfterMs;
+                    } else {
+                        tagFetchTimeout *= 2;
+                    }
+                })
+                .finally(() => setTimeout(fetchNextTagPage, tagFetchTimeout));
+        }, defaultFetchTimeout);
     }
 
     chrome.runtime.onMessage.addListener(message => {
@@ -97,12 +132,8 @@
             beginArchiving(message.format);
             break;
         case 'stop':
-            if (pageInterval != null) {
-                clearInterval(pageInterval);
-            }
-            if (worksInterval != null) {
-                clearInterval(worksInterval);
-            }
+            works = [];
+            numPages = 0;
             break;
         }
     });
