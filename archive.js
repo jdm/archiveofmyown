@@ -86,7 +86,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 
 function updateContent(currentPage, works, downloadUrls, downloadIndex, pages, throttledUntil) {
     if (currentPage == pages &&
-        downloadUrls.length == works.length &&
+        downloadUrls.length >= works.length &&
         downloadIndex == downloadUrls.length)
     {
         document.querySelector("#complete-reset").onclick = reset;
