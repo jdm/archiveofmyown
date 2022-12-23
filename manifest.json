@@ -10,6 +10,12 @@
     "48": "icon1.png"
   },
 
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "archiveofmyown@lastonthebo.at"
+    }
+  },
+
   "permissions": [
     "activeTab",
     "downloads",

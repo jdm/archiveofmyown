@@ -12,6 +12,10 @@ async function setup() {
     pageContent = document.querySelector('#page-content');
     const [currentTab] =
           await chrome.tabs.query({active: true, currentWindow: true});
+    if (!currentTab.url.startsWith("https://archiveofourown.org/tags/")) {
+        pageContent.innerHTML = `To use this extension, visit a tag index on Archive of Our Own.`
+        return;
+    }
     const url = new URL(currentTab.url);
     const pathParts = url.pathname.split('/');
     tag = decodeURIComponent(pathParts[2].replace('*s*', '/'));
