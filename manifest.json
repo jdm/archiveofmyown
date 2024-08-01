@@ -40,7 +40,8 @@
     },
     "default_popup": "archive.html",
     "show_matches": [
-      "https://archiveofourown.org/tags/*"
+      "https://archiveofourown.org/tags/*",
+      "https://archiveofourown.org/users/*"
     ]
   }
 
