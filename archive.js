@@ -23,7 +23,9 @@ function showSingleDiv(id) {
 async function setup() {
     const [currentTab] =
           await browser.tabs.query({active: true, currentWindow: true});
-    if (!currentTab.url.startsWith("https://archiveofourown.org/tags/")) {
+    if (!currentTab.url.startsWith("https://archiveofourown.org/tags/") &&
+        !(currentTab.url.startsWith("https://archiveofourown.org/users/") &&
+          currentTab.url.indexOf("/works") !== -1)) {
         showSingleDiv("nontag");
         return;
     }
