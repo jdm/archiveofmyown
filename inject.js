@@ -39,6 +39,7 @@
     }
 
     function fetchPage(url, handler) {
+        url += "?view_adult=true";
         console.log(`fetching ${url}`);
         return fetch(url)
             .then(response => {
