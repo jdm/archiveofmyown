@@ -23,9 +23,11 @@ function showSingleDiv(id) {
 async function setup() {
     const [currentTab] =
           await browser.tabs.query({active: true, currentWindow: true});
-    if (!currentTab.url.startsWith("https://archiveofourown.org/tags/") &&
-        !(currentTab.url.startsWith("https://archiveofourown.org/users/") &&
-          currentTab.url.indexOf("/works") !== -1)) {
+    if (currentTab.url.indexOf("archiveofourown.org") === -1 ||
+        currentTab.url.indexOf("/works/") != -1 ||
+        (currentTab.url.indexOf("/works") === -1 &&
+         currentTab.url.indexOf("/tags") === -1))
+    {
         showSingleDiv("nontag");
         return;
     }
@@ -38,8 +40,13 @@ async function setup() {
     showSingleDiv("inputs");
 
     const url = new URL(currentTab.url);
-    const pathParts = url.pathname.split('/');
-    tag = decodeURIComponent(pathParts[2].replace('*s*', '/'));
+    let tag = url.searchParams.get('tag_id');
+    if (tag == null) {
+        const pathParts = url.pathname.split('/');
+        tag = decodeURIComponent(pathParts[2].replace('*s*', '/'));
+    } else {
+        tag = tag.replace('*s*', '/');
+    }
 
     const data = await browser.storage.local.get({ "archiving": false, "downloadDir": "archive" });
     if (data.archiving) {

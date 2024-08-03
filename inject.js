@@ -9,12 +9,6 @@
         browser = chrome;
     }
 
-    if (!location.href.startsWith("https://archiveofourown.org/tags/") &&
-        !(location.href.startsWith("https://archiveofourown.org/users/") &&
-          location.pathname.endsWith("/works"))) {
-        return;
-    }
-
     let works = [];
     let nextWorkTimeout = null;
     let nextPageTimeout = null;
