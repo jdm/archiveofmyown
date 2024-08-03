@@ -5,8 +5,9 @@ if (typeof(browser) === "undefined") {
 function updateWorks(pageNum, urls) {
     browser.storage.local.get({ "works": [], "currentPage": 0 })
         .then(({ works, currentPage }) => {
+          let uniqueWorks = urls.filter(url => works.indexOf(url) === -1);
             return browser.storage.local.set({
-                "works": works.concat(urls),
+                "works": works.concat(uniqueWorks),
                 "currentPage": Math.max(currentPage, pageNum),
             })
         })

@@ -1,4 +1,9 @@
 (function() {
+    if (typeof hasBeenInjected !== "undefined") {
+        return;
+    }
+    hasBeenInjected = true;
+
     console.log("injected");
     if (typeof(browser) === "undefined") {
         browser = chrome;
@@ -11,6 +16,8 @@
     }
 
     let works = [];
+    let nextWorkTimeout = null;
+    let nextPageTimeout = null;
 
     function retrieveWorksFromPage(document, pageNumber) {
         const works = document.querySelectorAll(".work li.work");
@@ -74,10 +81,10 @@
 
         const defaultFetchTimeout = 200;
         let workFetchTimeout = defaultFetchTimeout;
-        setTimeout(function fetchNextWork() {
+        nextWorkTimeout = setTimeout(function fetchNextWork() {
             const work = works.shift();
             if (!work) {
-                setTimeout(fetchNextWork, workFetchTimeout);
+                nextWorkTimeout = setTimeout(fetchNextWork, workFetchTimeout);
                 return;
             }
             fetchPage(work, (doc) => handleWork(doc, format))
@@ -98,7 +105,7 @@
                         workFetchTimeout *= 2;
                     }
                 })
-                .finally(() => setTimeout(fetchNextWork, workFetchTimeout));
+                .finally(() => nexWorkTimeout = setTimeout(fetchNextWork, workFetchTimeout));
         }, defaultFetchTimeout);
 
         // If we're looking at any tag page which is not the first one, we need to fetch
@@ -114,9 +121,9 @@
         }
 
         let tagFetchTimeout = defaultFetchTimeout;
-        setTimeout(function fetchNextTagPage() {
+        nextPageTimeout = setTimeout(function fetchNextTagPage() {
             if (nextPage > numPages) {
-                setTimeout(fetchNextTagPage, tagFetchTimeout);
+                nextPageTimeout = setTimeout(fetchNextTagPage, tagFetchTimeout);
                 return;
             }
             fetchingPage = nextPage;
@@ -141,7 +148,7 @@
                         tagFetchTimeout *= 2;
                     }
                 })
-                .finally(() => setTimeout(fetchNextTagPage, tagFetchTimeout));
+                .finally(() => nextPageTimeout = setTimeout(fetchNextTagPage, tagFetchTimeout));
         }, defaultFetchTimeout);
     }
 
@@ -153,6 +160,14 @@
         case 'stop':
             works = [];
             numPages = 0;
+            if (nextWorkTimeout !== null) {
+                clearTimeout(nextWorkTimeout);
+                nextWorkTimeout = null;
+            }
+            if (nextPageTimeout !== null) {
+                clearTimeout(nextPageTimeout);
+                nextPageTimeout = null;
+            }
             break;
         }
         return false;
